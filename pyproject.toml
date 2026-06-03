@@ -1,0 +1,19 @@
+[project]
+name = "syntaxerror-prognose"
+version = "0.1.0"
+description = "Team syntaxerror live load forecasting submission for ENTSO-E leaderboard"
+requires-python = ">=3.13"
+dependencies = [
+    "spotforecast2-safe>=15.7.0",  # For provider-based exogenous (entsoe_*, covid_*)
+    "spotforecast2>=3.4.0",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "lightgbm",
+    "scipy",
+    "entsoe-py>=0.6",
+    "pyyaml",
+]
+
+[tool.uv]
+prerelease = "allow"
