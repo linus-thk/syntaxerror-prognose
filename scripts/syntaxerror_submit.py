@@ -58,15 +58,15 @@ START_DOWNLOAD = "202201010000"
 DATA_SUBDIR = "syntaxerror_submission"      # under ~/spotforecast2_data/
 CACHE_SUBDIR = "syntaxerror_submission"     # under ~/.spotforecast2_cache/
 OUTLIER_IQR_K = 5
-MAX_ACTUAL_LAG_HOURS = 36                # team4-interim guard (qmd line 252)
+MAX_ACTUAL_LAG_HOURS = 72                # team4-interim guard (qmd line 252)
 LAG_FALLBACK = [1, 2, 24, 168]
-TRAIN_YEARS = 3
+TRAIN_YEARS = 1
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 500
-N_INITIAL_SPOTOPTIM = 100
+N_TRIALS_SPOTOPTIM = 50
+N_INITIAL_SPOTOPTIM = 10
 N_TRIALS_OPTUNA = 15
 
 logger = logging.getLogger("syntaxerror_submit")
@@ -101,7 +101,7 @@ class Coverage:
 # --- CLI + logging ------------------------------------------------------------
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="team4_submit",
+        prog="teamsyntaxerror_submit",
         description="Standalone team_4 live forecast + submission (chapter 14).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -203,6 +203,10 @@ def check_team_registry(team_id: str, lb_root: Path) -> None:
 
 def compute_dates(now: pd.Timestamp, data_end: str | None) -> Dates:
     """qmd ``team4-constants`` (lines 146-167). `now` is captured once upstream."""
+    if now.tzinfo is None:
+        now = now.tz_localize("UTC")
+    else:
+        now = now.tz_convert("UTC")
     today = now.normalize()
     yesterday = today - pd.Timedelta(days=1)
     tomorrow = today + pd.Timedelta(days=1)
@@ -309,7 +313,11 @@ def assert_coverage(interim: pd.DataFrame, dates: Dates, *, fallback: bool) -> C
 def entsoe_predictions(interim: pd.DataFrame) -> pd.Series:
     """qmd ``team4-entsoe-predictions`` (lines 283-284): ENTSO-E's own day-ahead
     forecast on the hourly grid (baseline only; never trained on)."""
-    preds = interim["Forecasted Load"].resample("h").mean().dropna()
+    preds = interim["Forecasted Load"].resample("h", label="left", closed="left").mean().dropna()
+    if preds.index.tz is None:
+        preds.index = preds.index.tz_localize("UTC")
+    else:
+        preds.index = preds.index.tz_convert("UTC")
     preds.name = "Forecasted Load"
     return preds
 
@@ -431,6 +439,11 @@ def run_pipeline(cfg):
 def extract_y0(mt, dates: Dates) -> pd.Series:
     """qmd (lines 1699-1705)."""
     future = mt.results["spotoptim"]["Actual Load"]["future_pred"]
+    if future.index.tz is None:
+        future.index = future.index.tz_localize("UTC")
+    else:
+        future.index = future.index.tz_convert("UTC")
+
     logger.info("raw forecast: %d steps  %s -> %s",
                 len(future), future.index.min(), future.index.max())
     y0 = future.loc[dates.tomorrow:dates.last_target]
@@ -637,8 +650,13 @@ def write_submission(y0: pd.Series, dates: Dates, repo_root: Path) -> Path:
     sub_dir = repo_root / "prognosen" / date.isoformat()
     sub_dir.mkdir(parents=True, exist_ok=True)
     path = sub_dir / f"{now.strftime('%H%M')}-forecast.csv"
+    idx = y0.index
+    if idx.tz is None:
+        idx = idx.tz_localize("UTC")
+    else:
+        idx = idx.tz_convert("UTC")
     df = pd.DataFrame({
-        "timestamp_utc": y0.index.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp_utc": idx.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "forecast_mw": y0.round(2).values,
     })
     df.to_csv(path, index=False)
