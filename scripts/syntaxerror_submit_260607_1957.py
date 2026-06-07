@@ -435,8 +435,15 @@ def assert_coverage(interim: pd.DataFrame, dates: Dates, *, fallback: bool) -> C
     # day-ahead exog. Gate A of the incident forensics: ENTSO-E never
     # corrects this corruption class retroactively, so aborting buys no
     # better data later; "abort" remains the conservative alternative.
-    from spotforecast2_safe.exceptions import TargetCorruptionError
-    from spotforecast2_safe.preprocessing import apply_target_corruption_policy
+    try:
+        from spotforecast2_safe.exceptions import TargetCorruptionError
+    except ImportError:  # pragma: no cover
+        TargetCorruptionError = None
+
+    try:
+        from spotforecast2_safe.preprocessing import apply_target_corruption_policy
+    except ImportError:  # pragma: no cover
+        apply_target_corruption_policy = None
 
     qc_recent = interim["Actual Load"].loc[
         actual.index.max() - pd.Timedelta(days=QC_WINDOW_DAYS):
@@ -457,31 +464,38 @@ def assert_coverage(interim: pd.DataFrame, dates: Dates, *, fallback: bool) -> C
                 QC_WINDOW_DAYS, qc_range.max(), MAX_INTRAHOUR_RANGE_MW,
                 qc_step.max(), MAX_ADJ_STEP_MW,
                 qc_dev.min(), MAX_DEVIATION_MW)
-    try:
-        _, qc_report = apply_target_corruption_policy(
-            interim[["Actual Load", DEVIATION_REF]],
-            targets=["Actual Load"],
-            policy=TARGET_CORRUPTION_POLICY,
-            range_mw=MAX_INTRAHOUR_RANGE_MW,
-            step_mw=MAX_ADJ_STEP_MW,
-            window_days=QC_WINDOW_DAYS,
-            max_heal_hours=0,
-            anchor_zone_hours=168,
-            cutoff=None,
-            logger=logger,
-            deviation_mw=MAX_DEVIATION_MW,
-            deviation_ref=DEVIATION_REF,
-            deviation_slots=DEVIATION_SLOTS,
+
+    if apply_target_corruption_policy is None or TargetCorruptionError is None:
+        logger.warning(
+            "spotforecast2_safe does not provide target corruption QC helpers; "
+            "skipping pre-run value-sanity QC."
         )
-    except TargetCorruptionError as exc:
-        raise Abort(1, str(exc))
-    if qc_report.fired:
-        last_sound = qc_report.first_flagged_hour - pd.Timedelta(hours=1)
-        logger.warning("value-sanity QC: %d corrupt hour(s) in %d span(s) -> "
-                       "policy %r; prepare_data will retract data_end to %s "
-                       "and auto-extend predict_size",
-                       qc_report.n_flagged_hours, len(qc_report.spans),
-                       qc_report.action, last_sound)
+    else:
+        try:
+            _, qc_report = apply_target_corruption_policy(
+                interim[["Actual Load", DEVIATION_REF]],
+                targets=["Actual Load"],
+                policy=TARGET_CORRUPTION_POLICY,
+                range_mw=MAX_INTRAHOUR_RANGE_MW,
+                step_mw=MAX_ADJ_STEP_MW,
+                window_days=QC_WINDOW_DAYS,
+                max_heal_hours=0,
+                anchor_zone_hours=168,
+                cutoff=None,
+                logger=logger,
+                deviation_mw=MAX_DEVIATION_MW,
+                deviation_ref=DEVIATION_REF,
+                deviation_slots=DEVIATION_SLOTS,
+            )
+        except TargetCorruptionError as exc:
+            raise Abort(1, str(exc))
+        if qc_report.fired:
+            last_sound = qc_report.first_flagged_hour - pd.Timedelta(hours=1)
+            logger.warning("value-sanity QC: %d corrupt hour(s) in %d span(s) -> "
+                           "policy %r; prepare_data will retract data_end to %s "
+                           "and auto-extend predict_size",
+                           qc_report.n_flagged_hours, len(qc_report.spans),
+                           qc_report.action, last_sound)
 
     if fallback:
         gate = dates.yesterday + pd.Timedelta(hours=23)  # yesterday 23:00 UTC

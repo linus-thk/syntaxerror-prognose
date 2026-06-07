@@ -245,7 +245,7 @@ def configure_environment() -> None:
 
 def check_team_registry(team_id: str, lb_root: Path) -> None:
     """qmd ``team4-registry`` (lines 54-66): fail-loud if team_id is unknown."""
-    import yaml
+    #import yaml
 
     teams_yml = lb_root / "teams.yml"
     if not teams_yml.exists():
