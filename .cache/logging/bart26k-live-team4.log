@@ -54,3 +54,7 @@
 2026-06-08 15:43:56  INFO      spotforecast2_safe.multitask.base.MultiTask  [task 4] Target 'Actual Load': task 4: SpotOptim Tuned ...
 2026-06-08 15:43:56  INFO      spotforecast2_safe.multitask.base.MultiTask    Warm-start lags seeded: [1, 2, 3, 15, 24, 25, 168, 169]
 2026-06-08 15:43:56  INFO      spotforecast2_safe.multitask.base.MultiTask    SpotOptim n_jobs: -1
+2026-06-08 17:03:53  INFO      spotforecast2_safe.multitask.base.MultiTask    Best params: {'estimator__num_leaves': 93, 'estimator__max_depth': 17, 'estimator__learning_rate': 0.0946570719499821, 'estimator__n_estimators': 4534, 'estimator__bagging_fraction': 0.9396599342373142, 'estimator__feature_fraction': 0.6382999774927338, 'estimator__reg_alpha': 3.28770831877171, 'estimator__reg_lambda': 8.948007134740404}
+2026-06-08 17:03:53  INFO      spotforecast2_safe.multitask.base.MultiTask    Best lags: [  1   2   3  23  24  25  47  48 167 168 169 336]
+2026-06-08 17:03:53  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved tuning results: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/tuning_results/bart26k-live-team4_Actual Load_spotoptim_20260608_150353.json
+2026-06-08 17:05:35  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved model: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/models/bart26k-live-team4/bart26k-live-team4_Actual Load_spotoptim_20260608_150534.joblib
