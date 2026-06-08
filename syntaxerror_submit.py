@@ -94,14 +94,14 @@ DEVIATION_SLOTS = 1                      #   experiments/e9: 1 clean slot < -11 
                                          #   06-07 frontier dropout is single-slot -> slots=1
 TARGET_CORRUPTION_POLICY = "truncate"    # chapter default since 2026-06-05; "abort" = conservative
 LAG_FALLBACK = [1, 2, 24, 168]
-TRAIN_YEARS = 2
+TRAIN_YEARS = 4
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 5
-N_INITIAL_SPOTOPTIM = 2  
-N_TRIALS_OPTUNA = 1
+N_TRIALS_SPOTOPTIM = 50
+N_INITIAL_SPOTOPTIM = 15  
+N_TRIALS_OPTUNA = 10
 
 # Packaged-copy divergences D2/D3: everything resolves relative to the package.
 PACKAGE_ROOT = Path(__file__).resolve().parent
