@@ -99,9 +99,10 @@ PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 50
-N_INITIAL_SPOTOPTIM = 15  
+N_TRIALS_SPOTOPTIM = 25
+N_INITIAL_SPOTOPTIM = 10
 N_TRIALS_OPTUNA = 10
+
 
 # Packaged-copy divergences D2/D3: everything resolves relative to the package.
 PACKAGE_ROOT = Path(__file__).resolve().parent
@@ -623,7 +624,7 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         include_holiday_features=True,
         include_holiday_adjacency_features=True,  # Brückentag + day before/after holiday (sf2-safe >= 15.9.0)
         poly_features_degree=2,
-        max_poly_features=40,
+        max_poly_features=10,
         state="NW",
         random_state=42,
         on_weather_failure="skip",
@@ -633,7 +634,7 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         include_entsoe_renewable_forecast=True,
         include_entsoe_net_load=INCLUDE_ENTSOE_NET_LOAD,
         include_entsoe_day_ahead_price=True,
-        include_covid_infection_rate=True,
+        include_covid_infection_rate=False,
         on_exog_provider_failure="skip",
         exog_max_gap_hours=3,
         exog_max_tail_gap_hours=48,
