@@ -94,13 +94,13 @@ DEVIATION_SLOTS = 1                      #   experiments/e9: 1 clean slot < -11 
                                          #   06-07 frontier dropout is single-slot -> slots=1
 TARGET_CORRUPTION_POLICY = "truncate"    # chapter default since 2026-06-05; "abort" = conservative
 LAG_FALLBACK = [1, 2, 24, 168]
-TRAIN_YEARS = 4
+TRAIN_YEARS = 2
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
 N_TRIALS_SPOTOPTIM = 25
-N_INITIAL_SPOTOPTIM = 10
+N_INITIAL_SPOTOPTIM = 15
 N_TRIALS_OPTUNA = 10
 
 
@@ -623,8 +623,8 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         include_weather_windows=True,
         include_holiday_features=True,
         include_holiday_adjacency_features=True,  # Brückentag + day before/after holiday (sf2-safe >= 15.9.0)
-        poly_features_degree=2,
-        max_poly_features=10,
+        poly_features_degree=3,
+        max_poly_features=20,
         state="NW",
         random_state=42,
         on_weather_failure="skip",
@@ -634,7 +634,7 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         include_entsoe_renewable_forecast=True,
         include_entsoe_net_load=INCLUDE_ENTSOE_NET_LOAD,
         include_entsoe_day_ahead_price=True,
-        include_covid_infection_rate=False,
+        include_covid_infection_rate=True,
         on_exog_provider_failure="skip",
         exog_max_gap_hours=3,
         exog_max_tail_gap_hours=48,
