@@ -1,0 +1,134 @@
+#!/bin/bash
+
+# Script zum automatischen Pushen von Submission-CSVs mit PR ins challenge-leaderboard
+# Erfordert: git, gh (GitHub CLI)
+
+set -e
+
+# Farben für Output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Funktionen
+print_error() {
+    echo -e "${RED}✗ $1${NC}" >&2
+}
+
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+print_info() {
+    echo -e "${YELLOW}ℹ $1${NC}"
+}
+
+# Pfade
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SOURCE_SUBMISSION_DIR="$SCRIPT_DIR/submissions/syntaxerror"
+
+# Finde challenge-leaderboard Repo (eine Ebene höher, Geschwister-Repo)
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+LEADERBOARD_DIR="$PARENT_DIR/challenge-leaderboard"
+TARGET_SUBMISSION_DIR="$LEADERBOARD_DIR/submissions/syntaxerror"
+
+if [ ! -d "$LEADERBOARD_DIR" ]; then
+    print_error "challenge-leaderboard Repo nicht gefunden: $LEADERBOARD_DIR"
+    echo "Stellt sicher, dass das Repo neben syntaxerror-prognose geklont ist."
+    exit 1
+fi
+
+print_success "challenge-leaderboard gefunden: $LEADERBOARD_DIR"
+
+# Datum berechnen (Morgen)
+# macOS: date -u -v+1d +"%Y-%m-%d"
+# Linux: date -u -d "+1 day" +"%Y-%m-%d"
+FORECAST_DATE=$(date -u -v+1d +"%Y-%m-%d" 2>/dev/null || date -u -d "+1 day" +"%Y-%m-%d")
+
+print_info "Forecast-Datum: $FORECAST_DATE"
+
+# CSV-Datei finden
+SOURCE_CSV_FILE="$SOURCE_SUBMISSION_DIR/$FORECAST_DATE.csv"
+
+if [ ! -f "$SOURCE_CSV_FILE" ]; then
+    print_error "CSV-Datei nicht gefunden: $SOURCE_CSV_FILE"
+    echo "Verfügbare Dateien in $SOURCE_SUBMISSION_DIR:"
+    ls -la "$SOURCE_SUBMISSION_DIR" || true
+    exit 1
+fi
+
+print_success "CSV-Datei gefunden: $(basename $SOURCE_CSV_FILE)"
+
+# CSV ins challenge-leaderboard Repo kopieren
+TARGET_CSV_FILE="$TARGET_SUBMISSION_DIR/$FORECAST_DATE.csv"
+mkdir -p "$TARGET_SUBMISSION_DIR"
+
+print_info "Kopiere CSV zu: $TARGET_CSV_FILE"
+cp "$SOURCE_CSV_FILE" "$TARGET_CSV_FILE"
+print_success "CSV kopiert"
+
+# Branch-Name und Summary
+BRANCH_NAME="submission/syntaxerror/$FORECAST_DATE"
+SUMMARY="submission(syntaxerror): forecast $FORECAST_DATE"
+
+print_info "Branch: $BRANCH_NAME"
+print_info "Summary: $SUMMARY"
+
+# Ins challenge-leaderboard Repo gehen
+cd "$LEADERBOARD_DIR"
+
+# Upstream Remote hinzufügen, falls nicht vorhanden
+if ! git remote get-url upstream >/dev/null 2>&1; then
+    print_info "Füge upstream Remote hinzu..."
+    git remote add upstream https://github.com/bartzbeielstein/challenge-leaderboard.git
+fi
+
+# Branch erstellen/wechseln
+if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
+    print_info "Branch existiert bereits, wechsle zu $BRANCH_NAME"
+    git checkout "$BRANCH_NAME"
+else
+    print_info "Erstelle neuen Branch: $BRANCH_NAME"
+    git checkout -b "$BRANCH_NAME"
+fi
+
+# Änderungen hinzufügen und commiten
+print_info "Staging: $(basename $TARGET_CSV_FILE)"
+git add "$TARGET_CSV_FILE"
+
+if git diff --cached --quiet; then
+    print_info "Keine neuen Änderungen zu committen"
+else
+    print_info "Committing..."
+    git commit -m "$SUMMARY"
+    print_success "Commit erstellt"
+fi
+
+# Pushen zu Fork (origin)
+print_info "Pushe zu origin/$BRANCH_NAME"
+git push -u origin "$BRANCH_NAME"
+print_success "Gepusht"
+
+# PR gegen upstream erstellen
+print_info "Erstelle PR gegen bartzbeielstein/challenge-leaderboard..."
+
+# GitHub-Username auslesen
+GITHUB_USER=$(gh api user -q .login 2>/dev/null || echo "")
+if [ -z "$GITHUB_USER" ]; then
+    print_error "Kann GitHub-Username nicht auslesen. Stelle sicher, dass du mit 'gh auth login' authentifiziert bist."
+    exit 1
+fi
+
+if gh pr create \
+    --repo bartzbeielstein/challenge-leaderboard \
+    --title "$SUMMARY" \
+    --body "Automatisch generierte Submission für $FORECAST_DATE" \
+    --base main \
+    --head "$GITHUB_USER:$BRANCH_NAME" 2>&1 | grep -q "already exists"; then
+    print_info "PR existiert bereits"
+else
+    print_success "PR erstellt"
+fi
+
+print_success "🚀 Fertig!"

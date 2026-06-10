@@ -1044,6 +1044,46 @@ def _log_banner(dates: Dates, args: argparse.Namespace, lb_root: Path) -> None:
                 " (deterministic -> serial)" if args.deterministic else "")
     logger.info("=" * 72)
 
+# PR und Backup-Skripte
+
+def _run_post_submission_scripts() -> None:
+    """Führe Push- und Backup-Skripte nach erfolgreicher Submission aus."""
+    script_dir = PACKAGE_ROOT
+    push_script = script_dir / "push_submission.sh"
+    backup_script = script_dir / "backup_to_onedrive.sh"
+    
+    # Push-Skript
+    if push_script.exists():
+        try:
+            logger.info("starte push_submission.sh...")
+            res = subprocess.run([str(push_script)], capture_output=True, text=True, timeout=300)
+            if res.stdout.strip():
+                logger.info("%s", res.stdout.strip())
+            if res.returncode != 0:
+                logger.error("push_submission.sh fehlgeschlagen:\n%s", res.stderr.strip())
+            else:
+                logger.info("push_submission.sh erfolgreich")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("fehler beim Ausführen von push_submission.sh: %s", exc)
+    else:
+        logger.warning("push_submission.sh nicht gefunden: %s", push_script)
+    
+    # Backup-Skript
+    if backup_script.exists():
+        try:
+            logger.info("starte backup_to_onedrive.sh...")
+            res = subprocess.run([str(backup_script)], capture_output=True, text=True, timeout=600)
+            if res.stdout.strip():
+                logger.info("%s", res.stdout.strip())
+            if res.returncode != 0:
+                logger.error("backup_to_onedrive.sh fehlgeschlagen:\n%s", res.stderr.strip())
+            else:
+                logger.info("backup_to_onedrive.sh erfolgreich")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("fehler beim Ausführen von backup_to_onedrive.sh: %s", exc)
+    else:
+        logger.warning("backup_to_onedrive.sh nicht gefunden: %s", backup_script)
+
 
 # --- orchestration ------------------------------------------------------------
 def _run(args: argparse.Namespace) -> int:
@@ -1150,6 +1190,11 @@ def _run(args: argparse.Namespace) -> int:
         logger.info("DONE: submission for %s written%s.",
                     dates.tomorrow.date().isoformat(),
                     " and validated" if not args.no_validate else "")
+        
+        # Automatisches Backup und Push nach erfolgreicher Submission
+        logger.info("starte automatische Skripte (push + backup)...")
+        _run_post_submission_scripts()
+    
     return code
 
 
