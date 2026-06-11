@@ -1,0 +1,30 @@
+{
+  "data_frame_name": "bart26k-live-team4",
+  "target": "Actual Load",
+  "task_name": "spotoptim",
+  "timestamp": "20260611_185641",
+  "best_params": {
+    "estimator__num_leaves": 93,
+    "estimator__max_depth": 17,
+    "estimator__learning_rate": 0.09467733740496809,
+    "estimator__n_estimators": 4534,
+    "estimator__bagging_fraction": 0.9397601893750801,
+    "estimator__feature_fraction": 0.6383865420151187,
+    "estimator__reg_alpha": 3.2877758932967662,
+    "estimator__reg_lambda": 8.947982372227449
+  },
+  "best_lags": [
+    1,
+    2,
+    3,
+    23,
+    24,
+    25,
+    47,
+    48,
+    167,
+    168,
+    169,
+    336
+  ]
+}
