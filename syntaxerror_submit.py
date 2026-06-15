@@ -81,7 +81,7 @@ DEFAULT_TEAM_ID = "syntaxerror_entsoe" if INCLUDE_ENTSOE_FORECAST_LOAD else "syn
 START_DOWNLOAD = "202201010000"
 DATA_SUBDIR = "ddmo_ch14_syntaxerror"             # under ~/spotforecast2_data/ (= chapter `team4-imports`)
 CACHE_SUBDIR = "ddmo_ch14_syntaxerror"            # under ~/.spotforecast2_cache/
-OUTLIER_IQR_K = 5
+OUTLIER_IQR_K = 3
 MAX_ACTUAL_LAG_HOURS = 36                # team4-interim guard (qmd line 252)
 GAP_SCAN_DAYS = 28                       # team4-interim interior-gap guard
 MAX_ACTUAL_GAP_HOURS = 12                #   (third check; added 2026-06-04)
@@ -99,9 +99,9 @@ PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 50
-N_INITIAL_SPOTOPTIM = 10
-N_TRIALS_OPTUNA = 5
+N_TRIALS_SPOTOPTIM = 5
+N_INITIAL_SPOTOPTIM = 2
+N_TRIALS_OPTUNA = 1
 
 
 # Packaged-copy divergences D2/D3: everything resolves relative to the package.
@@ -543,6 +543,66 @@ def team4_lgbm_factory(config, *, weight_func=None, target=None):
     )
 
 
+def team4_ensemble_factory(config, *, weight_func=None, target=None):
+    """LightGBM + XGBoost ensemble via VotingRegressor (equal weights).
+
+    SpotOptim tunes the LightGBM sub-estimator through the ``estimator__lgbm__``
+    prefix; XGBoost uses fixed sensible defaults so the search dimensionality
+    stays identical to the single-model baseline.  Averaging two diverse
+    gradient-boosting implementations typically reduces variance on unseen days.
+    """
+    from lightgbm import LGBMRegressor
+    from xgboost import XGBRegressor
+    from sklearn.ensemble import VotingRegressor
+    from spotforecast2_safe.forecaster.recursive import ForecasterRecursive
+    from spotforecast2_safe.preprocessing import RollingFeatures
+
+    del target
+    # num_threads=1 / n_jobs=1: joblib parallelises the CV folds at the outer
+    # level (fork). Letting LightGBM or XGBoost spawn their own OpenMP threads
+    # inside forked workers causes pthread_mutex_init failures and SIGSEGV on
+    # macOS (OMP Error #179). Single-threaded models avoid the conflict entirely.
+    lgbm = LGBMRegressor(random_state=config.random_state, verbose=-1, num_threads=1)
+    xgb = XGBRegressor(
+        random_state=config.random_state,
+        verbosity=0,
+        tree_method="hist",
+        n_estimators=1000,
+        learning_rate=0.05,
+        max_depth=6,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        reg_alpha=0.1,
+        reg_lambda=1.0,
+        min_child_weight=5,
+        n_jobs=1,
+    )
+    ensemble = VotingRegressor([("lgbm", lgbm), ("xgb", xgb)])
+    # weight_func is not forwarded: VotingRegressor.fit() has no sample_weight
+    # parameter and raises IgnoredArgumentWarning when one is passed.
+    return ForecasterRecursive(
+        estimator=ensemble,
+        lags=config.lags_consider[-1],
+        window_features=[
+            RollingFeatures(stats="mean", window_sizes=config.window_size),
+            RollingFeatures(stats="mean", window_sizes=24 * 7),
+            RollingFeatures(stats="mean", window_sizes=24 * 30),
+        ],
+        weight_func=None,
+    )
+
+
+def _get_lgbm_sub(estimator):
+    """Return the fitted LGBMRegressor from a plain or VotingRegressor estimator."""
+    if hasattr(estimator, "feature_name_"):
+        return estimator
+    if hasattr(estimator, "estimators_"):
+        for est in estimator.estimators_:
+            if hasattr(est, "feature_name_"):
+                return est
+    return None
+
+
 def build_search_space(key_lags):
     """qmd ``team4-search-space``: weekly-anchored SpotOptim lag pool.
 
@@ -580,6 +640,33 @@ def build_search_space(key_lags):
     }
 
 
+def build_ensemble_search_space(key_lags):
+    """Search space for the LightGBM+XGBoost VotingRegressor ensemble.
+
+    XGBoost hyperparameters are fixed in the factory; only the LightGBM
+    sub-estimator is tuned (same dimensions as the single-model baseline,
+    reached via the ``estimator__lgbm__`` double-prefix).
+    """
+    return {
+        "estimator__lgbm__num_leaves": (8, 1024),
+        "estimator__lgbm__max_depth": (3, 32),
+        "estimator__lgbm__learning_rate": (0.0001, 0.3, "log10"),
+        "estimator__lgbm__n_estimators": (100, 5000),
+        "estimator__lgbm__bagging_fraction": (0.5, 1.0),
+        "estimator__lgbm__feature_fraction": (0.5, 1.0),
+        "estimator__lgbm__reg_alpha": (0.001, 10.0),
+        "estimator__lgbm__reg_lambda": (0.001, 10.0),
+        "lags": [
+            "[1, 2, 3, 11, 12, 22, 23, 24, 47, 48, 167, 168]",
+            "[1, 2, 11, 12, 23, 24, 167, 168]",
+            "[1, 2, 24, 48, 167, 168]",
+            "[1, 2, 23, 24, 47, 48, 167, 168]",
+            str(sorted(set(key_lags) | {1, 2, 24, 48, 168})),
+            "[1, 2, 3, 23, 24, 25, 47, 48, 167, 168, 169, 336]",
+        ],
+    }
+
+
 def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_years):
     """qmd ``team4-config``."""
     from spotforecast2_safe.data import Period
@@ -604,7 +691,7 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         bounds=None,
         data_loader=entsoe_data_loader,
         test_data_loader=entsoe_test_data_loader,
-        forecaster_factory=team4_lgbm_factory,
+        forecaster_factory=team4_ensemble_factory,
         periods=periods,
         lags_consider=key_lags,
         train_size=pd.Timedelta(days=365 * train_years),
@@ -696,7 +783,8 @@ def run_pipeline(cfg, search_space):
     # qmd team4-train: run_task_spotoptim, not run() -- the generic dispatcher
     # does not forward a custom search space.
     mt.run_task_spotoptim(search_space=search_space, show=False)
-    logger.info("SpotOptim done in %.1f s", time.monotonic() - t0)
+    logger.info("SpotOptim done in %.1f s (ensemble: LGBM tuned + XGBoost fixed defaults)",
+                time.monotonic() - t0)
     return mt
 
 
@@ -755,7 +843,10 @@ def assert_no_leakage(mt) -> None:
     (even with --no-figures): ENTSO-E's own forecast must never reach the model."""
     try:
         fc = mt.results["spotoptim"]["Actual Load"]["forecaster"]
-        feat_names = list(fc.estimator.feature_name_)
+        lgbm_sub = _get_lgbm_sub(fc.estimator)
+        if lgbm_sub is None:
+            raise AttributeError("no LGBMRegressor sub-estimator found")
+        feat_names = list(lgbm_sub.feature_name_)
     except Exception as exc:  # noqa: BLE001
         logger.warning("leakage guard skipped (cannot read fitted features): %s", exc)
         return
@@ -829,7 +920,8 @@ def _plot_acf(acf, key_lags, conf: float, figdir: Path) -> None:
 def _plot_importance(fc, feat_names, figdir: Path) -> None:
     import matplotlib.pyplot as plt
 
-    importances = fc.estimator.feature_importances_
+    lgbm_sub = _get_lgbm_sub(fc.estimator)
+    importances = lgbm_sub.feature_importances_
     ranking = sorted(zip(feat_names, importances), key=lambda kv: kv[1], reverse=True)[:20]
     family_color = {
         "lag": "#B22222", "weather/other": "#E07B00", "weather_window": "#F0A33C",
@@ -852,13 +944,13 @@ def _plot_importance(fc, feat_names, figdir: Path) -> None:
     plt.close(fig)
 
 
-def _plot_shap(fc, X_tr, figdir: Path) -> None:
+def _plot_shap_lgbm(lgbm_estimator, X_tr, figdir: Path) -> None:
     import shap
     import matplotlib.pyplot as plt
 
     step = max(1, len(X_tr) // 2000)
     X_sample = X_tr.iloc[::step]
-    explainer = shap.TreeExplainer(fc.estimator)
+    explainer = shap.TreeExplainer(lgbm_estimator)
     sv = explainer.shap_values(X_sample)
     shap.summary_plot(sv, X_sample, plot_type="bar", show=False)
     fig = plt.gcf()
@@ -917,21 +1009,23 @@ def save_diagnostics(mt, y0, preds_entsoe, figdir: Path) -> None:
     figdir.mkdir(parents=True, exist_ok=True)
     fc = mt.results["spotoptim"]["Actual Load"]["forecaster"]
 
-    X_tr = feat_names = None
+    X_tr = feat_names = lgbm_sub = None
     try:
         X_tr, _ = fc.create_train_X_y(
             y=mt.data_with_exog["Actual Load"],
             exog=mt.data_with_exog[mt.exog_feature_names],
         )
-        feat_names = list(fc.estimator.feature_name_)
+        lgbm_sub = _get_lgbm_sub(fc.estimator)
+        if lgbm_sub is not None:
+            feat_names = list(lgbm_sub.feature_name_)
     except Exception as exc:  # noqa: BLE001
         logger.warning("design-matrix reconstruction failed; skipping "
                        "importance/SHAP: %s", exc)
 
     if feat_names is not None:
         _try(lambda: _plot_importance(fc, feat_names, figdir), "feature_importance")
-    if X_tr is not None:
-        _try(lambda: _plot_shap(fc, X_tr, figdir), "shap")
+    if X_tr is not None and lgbm_sub is not None:
+        _try(lambda: _plot_shap_lgbm(lgbm_sub, X_tr, figdir), "shap")
     _try(lambda: _plot_forecast(mt, preds_entsoe, figdir), "forecast")
     _try(lambda: _plot_vs_entsoe(y0, preds_entsoe, figdir), "team4_vs_entsoe")
 
@@ -1123,7 +1217,7 @@ def _run(args: argparse.Namespace) -> int:
         cfg.tensorboard_path = tb_path
         logger.info("TensorBoard logging on -> %s  (watch: tensorboard --logdir %s)",
                     tb_path, tb_path)
-    mt = run_pipeline(cfg, build_search_space(key_lags))
+    mt = run_pipeline(cfg, build_ensemble_search_space(key_lags))
     y0 = extract_y0(mt, dates)
     warn_if_implausible_shape(y0, preds_entsoe, interim)
 

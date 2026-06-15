@@ -26,10 +26,11 @@ print_info() {
 
 # Pfade
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SOURCE_SUBMISSION_DIR="$SCRIPT_DIR/submissions/syntaxerror"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SOURCE_SUBMISSION_DIR="$PROJECT_ROOT/submissions/syntaxerror"
 
-# Finde challenge-leaderboard Repo (eine Ebene höher, Geschwister-Repo)
-PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+# Finde challenge-leaderboard Repo (Geschwister-Repo neben syntaxerror-prognose)
+PARENT_DIR="$(dirname "$PROJECT_ROOT")"
 LEADERBOARD_DIR="$PARENT_DIR/challenge-leaderboard"
 TARGET_SUBMISSION_DIR="$LEADERBOARD_DIR/submissions/syntaxerror"
 

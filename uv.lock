@@ -3094,6 +3094,7 @@ dependencies = [
     { name = "spotforecast2-safe", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "spotoptim", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "statsmodels", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "xgboost", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.metadata]
@@ -3115,6 +3116,7 @@ requires-dist = [
     { name = "spotforecast2-safe", specifier = "==18.1.0" },
     { name = "spotoptim", specifier = "==0.12.8" },
     { name = "statsmodels", specifier = "==0.14.6" },
+    { name = "xgboost", specifier = ">=2.0" },
 ]
 
 [[package]]
