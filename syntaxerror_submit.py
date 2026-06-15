@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Team Syntaxerror
 """Standalone reproduction of the operational pipeline in
 ``lecture/14_team_4_submission.qmd`` (chapter 14, team_4 advanced submission),
 runnable independently of Quarto.
