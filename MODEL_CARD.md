@@ -1,4 +1,4 @@
-# Model/Method Card: syntaxerror Forecast Pipeline
+# Model/Method Card: syntaxerror-prognose
 
 This card describes the day-ahead electricity load forecasting pipeline submitted by **team syntaxerror** to the Lastprognose-Challenge SoSe26 leaderboard. It documents the model's architecture, intended use, data requirements, and the conditions under which its results are valid. It follows the [Hugging Face Model Card Guidebook](https://huggingface.co/docs/hub/model-card-guidebook) taxonomy.
 
@@ -6,11 +6,11 @@ This card describes the day-ahead electricity load forecasting pipeline submitte
 
 | Field | Value |
 | --- | --- |
-| Name | syntaxerror Forecast Pipeline |
+| Name | syntaxerror-prognose |
 | Version | 1.0.0 (frozen snapshot 2026-06-08) |
 | Type | Deterministic recursive multi-step load forecasting system combining data preprocessing (spotforecast2-safe), hyperparameter tuning (SpotOptim), and LightGBM regression. |
 | Developed by | Team syntaxerror (course project for Lastprognose-Challenge SoSe26) |
-| Repository | <https://github.com/sequential-parameter-optimization/challenge-leaderboard> (leaderboard); reproducibility package at this location |
+| Repository | <https://github.com/timhaeger/syntaxerror-prognose> |
 | Reference | `MANIFEST.md`, `README.md` (this package); upstream lecture at <https://github.com/bartzbeielstein/bart26k-lecture> (chapter 14) |
 | Language | Python 3.13+ |
 | License | MIT (reproducibility package); underlying libraries carry their own licenses |
@@ -41,7 +41,7 @@ This card describes the day-ahead electricity load forecasting pipeline submitte
 
 ## 2. Intended Use and Scope
 
-This pipeline forecasts the next 24 hours of electricity load for the German (DE) bidding zone, using only historical load data and publicly available ENTSO-E day-ahead price / renewable forecasts. The forecasts are produced once per day (typically before 15:00 UTC) to support day-ahead market submissions or grid planning.
+This pipeline forecasts the next 24 hours of electricity load for the German (DE) bidding zone, using only historical load data and publicly available ENTSO-E day-ahead price / renewable forecasts. The forecasts are produced once per day to support day-ahead market submissions or grid planning.
 
 **Primary use cases:**
 - Challenge participation and leaderboard ranking (current intended use)
@@ -111,7 +111,7 @@ Forecast tomorrow using live ENTSO-E data (requires API key):
 ```bash
 export ENTSOE_API_KEY=your_token_here  # from https://transparency.entsoe.eu/
 
-# Full operational run (~5–10 min, parallel SpotOptim, 100 trials)
+# Full operational run (~30 min, parallel SpotOptim, 100 trials)
 uv run python syntaxerror_submit.py
 
 # See all options
@@ -138,7 +138,7 @@ See `syntaxerror_submit.py` docstring for full API and flag documentation.
 
 ### Task definition
 
-Univariate recursive 24-step-ahead forecasting of German electricity load (Germany, DE bidding zone) from ENTSO-E Transparency Platform data. Target frequency is one forecast per calendar day, production time is typically 14:00–15:00 UTC. The target series is hourly observations of total German electricity load (MW).
+Univariate recursive 24-step-ahead forecasting of German electricity load (Germany, DE bidding zone) from ENTSO-E Transparency Platform data. Target frequency is one forecast per calendar day; production time is usually in the evening, because there is more data available. The target series is hourly observations of total German electricity load (MW).
 
 ### Mathematical formulation
 
@@ -242,7 +242,7 @@ Decimal precision: float64 (saved as CSV, 2–6 significant digits typical). Str
 | CPU | Single-threaded deterministic mode (arm64 macOS reference); parallel mode runs on x86 / Linux / Windows but loses bit-exactness |
 | GPU | Not used; no GPU support |
 | Memory | Peak ~500 MB–1 GB typical (depends on history length and tuning complexity) |
-| Duration | Deterministic: ~45 min (SpotOptim serial, 20 trials); Operational: ~5–10 min (parallel, 100 trials) |
+| Duration | Deterministic: ~45 min (SpotOptim serial, 20 trials); Operational: ~30 min (parallel, 100 trials) |
 | Network | Optional (ENTSO-E API calls); offline mode with bundled snapshot available (`--skip-download`) |
 
 ### Serialization
@@ -262,13 +262,13 @@ Decimal precision: float64 (saved as CSV, 2–6 significant digits typical). Str
 
 | Source | Data | Frequency | Retention | License |
 | --- | --- | --- | --- | --- |
-| ENTSO-E Transparency | Actual Total Load (ATL), Forecasted Load (day-ahead), renewable generation forecast | 15-min (aggregated to hourly) | 2015-01-01 → present | CC0 (public domain); see MANIFEST.md attribution |
+| ENTSO-E Transparency | Actual Total Load (ATL), Forecasted Load (day-ahead), renewable generation forecast | 15-min (aggregated to hourly) | 2022-01-01 → present | CC0 (public domain); see MANIFEST.md attribution |
 | Open-Meteo (optional) | Temperature, humidity, cloud cover, wind speed | hourly | Cached during run; external call if fresh data needed | CC-BY 4.0 (free for non-commercial research) |
 | Holiday calendar | DE national holidays, weekends | daily | Fixed via `holidays` package | Package license |
 
 **Bundled snapshot** (this package, `data/interim/`):
 - Frozen 2026-06-07 ~15:04 UTC
-- Covers 2015-01-01 → 2026-06-08 21:45 UTC
+- Covers 2022-01-01 → 2026-06-08 21:45 UTC
 - Enables offline reproduction and time-travel replay
 
 ### Operational Design Domain (ODD)
@@ -324,12 +324,7 @@ $$\text{MAE} = \frac{1}{24} \sum_{h=0}^{23} \left| y_h - \hat{y}_h \right|$$
 
 where $y_h$ is the actual load in hour $h$ and $\hat{y}_h$ is the forecast.
 
-**Typical performance (2026-06-08 submission):**
-- MAE: ~2,000–2,500 MW (2.5–3.0% of average German load)
-- Seasonal baseline comparison: SpotOptim-tuned LightGBM beats naive seasonal by ~15–20%
-- ENTSO-E day-ahead benchmark: Syntaxerror comparable to or slightly better than published ENTSO-E forecasts
-
-Actual values vary by submission date and data quality.
+Performance depends on the target date, data quality, and tuning budget. Concrete accuracy numbers for a specific submission are recorded alongside that submission in the `expected/` directory and in the run logs; auditors should consult those artifacts for exact figures.
 
 ### Reproducibility evaluation
 

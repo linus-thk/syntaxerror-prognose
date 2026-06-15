@@ -1,8 +1,7 @@
-# MANIFEST — team_4 reproducibility package
+# MANIFEST — syntaxerror reproducibility package
 
 Snapshot date: **2026-06-07** (UTC). This file records exactly where and how
-the `team_4` forecasts on
-https://bartzbeielstein.github.io/challenge-leaderboard/ were produced.
+the `syntaxerror` reproducibility run for the Lastprognose-Challenge was produced.
 
 ## Execution architecture (original runs)
 
@@ -25,7 +24,7 @@ claimed for arm64 macOS.
 
 | Item | Value |
 |---|---|
-| Pipeline script | `bart26k-lecture/scripts/team4_submit.py` @ commit `87e27e1` |
+| Pipeline script | `syntaxerror_submit.py` (copy of `bart26k-lecture/scripts/team4_submit.py` @ commit `87e27e1`) |
 | Leaderboard repo | `bartzbeielstein/challenge-leaderboard` @ commit `f7171d4` |
 | Packaged copy divergences | D1 `--as-of` flag (historical replay), D2 package-local data/cache/figures homes, D3 `--leaderboard-root` defaults to the package dir. Full list in the module docstring of `team4_submit.py`; everything else is byte-identical to upstream. |
 
@@ -55,7 +54,7 @@ operational pipeline; snapshot taken 2026-06-07 ~15:04 UTC:
 
 | File | Content | Coverage |
 |---|---|---|
-| `energy_load.csv` | Actual Total Load + day-ahead Forecasted Load, 15-min | 2015-01-01 → 2026-06-08 21:45 UTC (last published actual: 2026-06-07 14:00 UTC) |
+| `energy_load.csv` | Actual Total Load + day-ahead Forecasted Load, 15-min | 2022-01-01 → 2026-06-08 21:45 UTC (last published actual: 2026-06-07 14:00 UTC) |
 | `renewable_forecast.csv` | wind/solar generation forecast | same window |
 | `day_ahead_price.csv` | DE_LU day-ahead spot price | same window |
 

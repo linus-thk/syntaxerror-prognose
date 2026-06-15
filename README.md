@@ -1,6 +1,6 @@
-# team_4 reproducibility package — Lastprognose-Challenge SoSe26
+# syntaxerror reproducibility package — Lastprognose-Challenge SoSe26
 
-Re-run the exact forecasting pipeline behind the `team_4` entries on the
+Re-run the exact forecasting pipeline used for the `syntaxerror` entry on the
 [leaderboard](https://bartzbeielstein.github.io/challenge-leaderboard/):
 ENTSO-E data → coverage guards → PACF lag selection → SpotOptim-tuned
 LightGBM (recursive 24-h forecast) → submission CSV.
@@ -10,18 +10,17 @@ LightGBM (recursive 24-h forecast) → submission CSV.
 ```sh
 # prerequisite: uv (https://docs.astral.sh/uv/) —
 #   curl -LsSf https://astral.sh/uv/install.sh | sh
-unzip team4-repro-2026-06-08.zip && cd team4-repro-2026-06-08
+git clone https://github.com/timhaeger/syntaxerror-prognose.git && cd syntaxerror-prognose
 uv sync --frozen
-uv run python team4_submit.py --skip-download --as-of 2026-06-07T15:00:00Z \
-    --deterministic --n-trials 20 --n-initial 10
-shasum -a 256 submissions/team_4/2026-06-08.csv \
-              expected/2026-06-08_reference_deterministic.csv
+uv run python syntaxerror_submit.py --skip-download --as-of 2026-06-07T15:00:00Z \
+  --deterministic --n-trials 20 --n-initial 10
+shasum -a 256 submissions/syntaxerror/2026-06-08.csv \
+        expected/2026-06-08_reference_deterministic.csv
 ```
 
-The two checksums match **bit-exactly** on arm64 macOS (the original
-architecture, see `MANIFEST.md`; verified by two independent runs on
-2026-06-07). The run takes ~45 min (serial SpotOptim is the price of
-bit-reproducibility) and needs no API key and no network beyond `uv sync`.
+The two checksums match **bit-exactly** on arm64 macOS (the reference
+platform; see `MANIFEST.md`). The run takes ~45 min (serial SpotOptim is the
+price of bit-reproducibility) and needs no API key and no network beyond `uv sync`.
 
 ## What "reproduce" means here — two profiles
 
@@ -41,15 +40,15 @@ Forecast *tomorrow* instead of replaying history — requires a free
 
 ```sh
 export ENTSOE_API_KEY=...
-uv run python team4_submit.py            # full operational run, ~5–10 min
-uv run python team4_submit.py --help     # all flags
+uv run python syntaxerror_submit.py            # full operational run, ~30 min
+uv run python syntaxerror_submit.py --help     # all flags
 ```
 
 ## Package contents
 
 | Path | Purpose |
 |---|---|
-| `team4_submit.py` | the pipeline (copy of `bart26k-lecture/scripts/team4_submit.py@87e27e1`, 3 documented divergences — see module docstring) |
+| `syntaxerror_submit.py` | the pipeline (copy of `bart26k-lecture/scripts/team4_submit.py@87e27e1`, 3 documented divergences — see module docstring) |
 | `pyproject.toml`, `uv.lock`, `.python-version`, `requirements.txt` | ==-pinned environment (Python 3.14.2; `requirements.txt` is the non-uv fallback: `pip install -r requirements.txt`) |
 | `data/interim/*.csv` | frozen ENTSO-E snapshot (load + renewables + price), 2026-06-07 ~15:04 UTC |
 | `expected/` | submitted CSV, deterministic reference CSV, `SHA256SUMS` |
