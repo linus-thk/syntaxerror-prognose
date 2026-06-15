@@ -8,7 +8,7 @@ This card describes the day-ahead electricity load forecasting pipeline submitte
 | --- | --- |
 | Name | syntaxerror-prognose |
 | Version | 1.0.0 (frozen snapshot 2026-06-08) |
-| Type | Deterministic recursive multi-step load forecasting system combining data preprocessing (spotforecast2-safe), hyperparameter tuning (SpotOptim), and LightGBM regression. |
+| Type | Deterministic recursive multi-step load forecasting system combining data preprocessing (spotforecast2-safe), hyperparameter tuning (SpotOptim), and a LightGBM + XGBoost ensemble. |
 | Developed by | Team syntaxerror (course project for Lastprognose-Challenge SoSe26) |
 | Repository | <https://github.com/timhaeger/syntaxerror-prognose> |
 | Reference | `MANIFEST.md`, `README.md` (this package); upstream lecture at <https://github.com/bartzbeielstein/bart26k-lecture> (chapter 14) |
@@ -23,7 +23,8 @@ This card describes the day-ahead electricity load forecasting pipeline submitte
 | spotforecast2-safe | 18.1.0 | Deterministic lag/feature engineering, guards against data leakage |
 | spotforecast2 | 5.1.1 | Configuration and task orchestration (ConfigEntsoe, MultiTask) |
 | SpotOptim | 0.12.8 | Sequential parameter optimization / hyperparameter tuning |
-| LightGBM | 4.6.0 | Gradient boosting regressor (underlying learner) |
+| LightGBM | 4.6.0 | Gradient boosting regressor component of the ensemble |
+| XGBoost | 3.2.0 | Gradient boosting regressor component of the ensemble |
 | pandas | 3.0.3 | Data I/O and tabular processing |
 | scikit-learn | 1.9.0 | Model wrappers and metrics |
 | entsoe-py | 0.8.0 | ENTSO-E Transparency Platform API client |
@@ -151,12 +152,12 @@ Given a historical load series $\{x_1, x_2, \ldots, x_T\}$ (hourly), the pipelin
 
 Each row produces a single target $y_t = x_t$ (current load), never including $x_t$ on the feature side to prevent look-ahead leakage.
 
-The predictor is a LightGBM gradient boosting regressor tuned via SpotOptim (Bayesian optimization). The hyperparameter search space includes:
-- `num_leaves` (tree complexity)
-- `learning_rate` (step size)
-- `min_child_samples` (overfitting control)
-- `subsample`, `colsample_bytree` (regularization)
-- `max_depth` (tree structure)
+The predictor is a VotingRegressor ensemble of LightGBM and XGBoost, with SpotOptim tuning the LightGBM sub-estimator and XGBoost using fixed sensible defaults. The hyperparameter search space includes:
+- `estimator__num_leaves` (tree complexity)
+- `estimator__learning_rate` (step size)
+- `estimator__min_child_samples` (overfitting control)
+- `estimator__subsample`, `estimator__colsample_bytree` (regularization)
+- `estimator__max_depth` (tree structure)
 
 Predictions are recursive: $\hat{y}_{T+h} = f(\hat{y}_{T+h-1}, \ldots, \hat{y}_{T+h-w}, \text{features}_{T+h})$ for $h = 1, \ldots, 24$.
 
@@ -167,8 +168,8 @@ Predictions are recursive: $\hat{y}_{T+h} = f(\hat{y}_{T+h-1}, \ldots, \hat{y}_{
 1. **Data I/O layer** (`entsoe_*` from spotforecast2): Download and validate ENTSO-E load, price, renewables.
 2. **Preprocessing layer** (`spotforecast2_safe`): PACF lag selection, cyclic encoding, rolling-window features, outlier detection, optional imputation.
 3. **Tuning layer** (`SpotOptim`): Hyperparameter search (Bayesian optimization, fixed seed for reproducibility).
-4. **Regression layer** (`LightGBM`, `sklearn` wrappers): Deterministic gradient boosting regressor, single-threaded mode for reproducibility.
-5. **Forecasting layer** (`ForecasterRecursiveLGBM`): Recursive multi-step prediction, output validation, CSV schema compliance.
+4. **Regression layer** (`LightGBM`, `XGBoost`, `sklearn` wrappers): Deterministic gradient boosting ensemble, single-threaded mode for reproducibility.
+5. **Forecasting layer** (`ForecasterRecursive`): Recursive multi-step prediction, output validation, CSV schema compliance.
 
 **Pipeline flow:**
 ```
