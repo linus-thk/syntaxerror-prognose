@@ -8,14 +8,14 @@
 [project]
 name = "team4-repro"
 version = "1.0.0"
-description = "Reproduce the team_4 day-ahead load forecasts of the Lastprognose-Challenge SoSe26"
+description = "Reproduce the team syntaxerror day-ahead load forecasts of the Lastprognose-Challenge SoSe26"
 requires-python = ">=3.13"
 dependencies = [
     "spotforecast2-safe==18.1.0",
     "spotforecast2==5.1.1",
     "spotoptim==0.12.8",
     "lightgbm==4.6.0",
-    "xgboost>=2.0",
+    "xgboost==3.2.0",
     "pandas==3.0.3",
     "numpy==2.4.6",
     "scipy==1.18.0rc1",
