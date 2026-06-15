@@ -1759,9 +1759,9 @@ spotforecast2-safe==18.1.0 ; (platform_machine == 'arm64' and sys_platform == 'd
     # via
     #   spotforecast2
     #   team4-repro
-spotoptim==0.12.8 ; (platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32' \
-    --hash=sha256:215dc6e9c7718f181f47a0d16b54faea7818dfd26a300f4aaacd83156db28506 \
-    --hash=sha256:9eb2c05232bd2bac16487ecf2f0ae437f8c7e4fca44b706551308be363604a03
+spotoptim==1.0.2 ; (platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux' or sys_platform == 'win32' \
+    --hash=sha256:771c2a69cc0e330d55b2df373ea273e739c67e292c88c6152767f38bef76cd9f \
+    --hash=sha256:e5281192387c5b6afd416965df1f66773f10184496a1eea0d40f63d4c4ef06ff
     # via
     #   spotforecast2
     #   team4-repro
