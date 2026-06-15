@@ -26,6 +26,7 @@ print_info() {
 
 # Pfade
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKUP_DIR="/Users/linuswolff/Library/CloudStorage/OneDrive-Persönlich/09_Studium/MAN/Backup_History"
 REPO_NAME="syntaxerror-prognose"
 
@@ -44,7 +45,7 @@ print_success "Backup-Verzeichnis: $BACKUP_DIR"
 # ZIP erstellen (mit Ausnahmen)
 print_info "Erstelle ZIP-Backup: $(basename $ZIP_FILE)"
 
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 
 # Zip mit Ausnahmen (venv, .git, __pycache__, .pytest_cache, etc.)
 zip -r "$ZIP_FILE" . \
