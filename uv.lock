@@ -3116,7 +3116,7 @@ requires-dist = [
     { name = "spotforecast2-safe", specifier = "==18.1.0" },
     { name = "spotoptim", specifier = "==0.12.8" },
     { name = "statsmodels", specifier = "==0.14.6" },
-    { name = "xgboost", specifier = ">=2.0" },
+    { name = "xgboost", specifier = "==3.2.0" },
 ]
 
 [[package]]
