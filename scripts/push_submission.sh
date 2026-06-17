@@ -85,14 +85,21 @@ if ! git remote get-url upstream >/dev/null 2>&1; then
     git remote add upstream https://github.com/bartzbeielstein/challenge-leaderboard.git
 fi
 
-# Branch erstellen/wechseln
+# main mit upstream synchronisieren, damit der neue Branch garantiert nur die
+# aktuelle CSV enthält (sonst werden CSVs aus alten, noch ausgecheckten
+# Submission-Branches mit übernommen)
+print_info "Synchronisiere main mit upstream..."
+git fetch upstream main
+git checkout main
+git reset --hard upstream/main
+
+# Branch immer frisch von main erstellen (alten lokalen Branch ggf. verwerfen)
 if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
-    print_info "Branch existiert bereits, wechsle zu $BRANCH_NAME"
-    git checkout "$BRANCH_NAME"
-else
-    print_info "Erstelle neuen Branch: $BRANCH_NAME"
-    git checkout -b "$BRANCH_NAME"
+    print_info "Verwerfe alten lokalen Branch: $BRANCH_NAME"
+    git branch -D "$BRANCH_NAME"
 fi
+print_info "Erstelle neuen Branch: $BRANCH_NAME"
+git checkout -b "$BRANCH_NAME"
 
 # Änderungen hinzufügen und commiten
 print_info "Staging: $(basename $TARGET_CSV_FILE)"
@@ -106,9 +113,9 @@ else
     print_success "Commit erstellt"
 fi
 
-# Pushen zu Fork (origin)
+# Pushen zu Fork (origin) - force, da der Branch oben ggf. neu von main erstellt wurde
 print_info "Pushe zu origin/$BRANCH_NAME"
-git push -u origin "$BRANCH_NAME"
+git push -f -u origin "$BRANCH_NAME"
 print_success "Gepusht"
 
 # PR gegen upstream erstellen
