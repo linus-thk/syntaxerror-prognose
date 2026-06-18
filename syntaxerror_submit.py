@@ -80,6 +80,12 @@ COUNTRY = "DE"
 INCLUDE_ENTSOE_FORECAST_LOAD = False
 INCLUDE_ENTSOE_NET_LOAD = False          # derived from Forecasted Load -> off together with it
 DEFAULT_TEAM_ID = "syntaxerror_entsoe" if INCLUDE_ENTSOE_FORECAST_LOAD else "syntaxerror"
+# Disabled 2026-06-18: scripts/backtest_submissions.py shows MAE 4113/3501 on
+# the two days run with the ensemble (06-16/06-17) vs. 953-3180 (avg ~2315)
+# on the six single-LightGBM days before it (06-08...06-15) -- small sample
+# (n=2), but directionally consistent with the ensemble hurting accuracy.
+# Flip back to True to re-enable team4_ensemble_factory for comparison.
+USE_XGBOOST_ENSEMBLE = True
 START_DOWNLOAD = "202201010000"
 DATA_SUBDIR = "ddmo_ch14_syntaxerror"             # under ~/spotforecast2_data/ (= chapter `team4-imports`)
 CACHE_SUBDIR = "ddmo_ch14_syntaxerror"            # under ~/.spotforecast2_cache/
@@ -101,9 +107,9 @@ PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 25
-N_INITIAL_SPOTOPTIM = 10
-N_TRIALS_OPTUNA = 5
+N_TRIALS_SPOTOPTIM = 100
+N_INITIAL_SPOTOPTIM = 25
+N_TRIALS_OPTUNA = 10
 
 
 # Packaged-copy divergences D2/D3: everything resolves relative to the package.
@@ -693,7 +699,7 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         bounds=None,
         data_loader=entsoe_data_loader,
         test_data_loader=entsoe_test_data_loader,
-        forecaster_factory=team4_ensemble_factory,
+        forecaster_factory=team4_ensemble_factory if USE_XGBOOST_ENSEMBLE else team4_lgbm_factory,
         periods=periods,
         lags_consider=key_lags,
         train_size=pd.Timedelta(days=365 * train_years),
@@ -1219,7 +1225,9 @@ def _run(args: argparse.Namespace) -> int:
         cfg.tensorboard_path = tb_path
         logger.info("TensorBoard logging on -> %s  (watch: tensorboard --logdir %s)",
                     tb_path, tb_path)
-    mt = run_pipeline(cfg, build_ensemble_search_space(key_lags))
+    search_space = build_ensemble_search_space(key_lags) if USE_XGBOOST_ENSEMBLE \
+        else build_search_space(key_lags)
+    mt = run_pipeline(cfg, search_space)
     y0 = extract_y0(mt, dates)
     warn_if_implausible_shape(y0, preds_entsoe, interim)
 
