@@ -100,15 +100,27 @@ MAX_DEVIATION_MW = 11_000                # deviation rule (sf2-safe >= 18.1.0): 
 DEVIATION_REF = "Forecasted Load"        #   day-ahead forecast; calibration in diagnosis/
 DEVIATION_SLOTS = 1                      #   experiments/e9: 1 clean slot < -11 GW in 2.4 y,
                                          #   06-07 frontier dropout is single-slot -> slots=1
-TARGET_CORRUPTION_POLICY = "truncate"    # chapter default since 2026-06-05; "abort" = conservative
+TARGET_CORRUPTION_POLICY = "truncate"    # reverted 2026-06-19 after backtest: "heal" with
+                                         #   TARGET_ANCHOR_ZONE_HOURS=8 raised TargetCorruptionError
+                                         #   (hard abort, zero submission) on 2 of 3 historical replay
+                                         #   days (06-16, 06-17) -- the flagged hours sat inside the
+                                         #   anchor zone, and unlike "truncate", "heal" refuses instead
+                                         #   of degrading gracefully. "truncate" always produces a
+                                         #   submission, which matters more than the accuracy upside
+                                         #   given the hard daily deadline. See
+                                         #   data/backtest/xgb_comparison.md for how to re-test a wider
+                                         #   anchor zone before trying "heal" again.
+TARGET_MAX_HEAL_HOURS = 5                # unused while policy="truncate"; kept for the next attempt
+TARGET_ANCHOR_ZONE_HOURS = 8             # unused while policy="truncate"; too small -- raise this
+                                         # substantially (and re-backtest) before re-enabling "heal"
 LAG_FALLBACK = [1, 2, 24, 168]
 TRAIN_YEARS = 2
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
 NUMBER_FOLDS = 10
 IMPUTATION_WINDOW_SIZE = 24
-N_TRIALS_SPOTOPTIM = 25
-N_INITIAL_SPOTOPTIM = 10
+N_TRIALS_SPOTOPTIM = 10
+N_INITIAL_SPOTOPTIM = 5
 N_TRIALS_OPTUNA = 5
 
 
@@ -462,8 +474,8 @@ def assert_coverage(interim: pd.DataFrame, dates: Dates, *, fallback: bool) -> C
             range_mw=MAX_INTRAHOUR_RANGE_MW,
             step_mw=MAX_ADJ_STEP_MW,
             window_days=QC_WINDOW_DAYS,
-            max_heal_hours=0,
-            anchor_zone_hours=168,
+            max_heal_hours=TARGET_MAX_HEAL_HOURS,
+            anchor_zone_hours=TARGET_ANCHOR_ZONE_HOURS,
             cutoff=None,
             logger=logger,
             deviation_mw=MAX_DEVIATION_MW,
@@ -743,6 +755,8 @@ def build_config(key_lags, cov: Coverage, *, n_jobs, n_trials, n_initial, train_
         target_qc_step_mw=MAX_ADJ_STEP_MW,
         target_qc_window_days=QC_WINDOW_DAYS,
         target_corruption_policy=TARGET_CORRUPTION_POLICY,
+        target_max_heal_hours=TARGET_MAX_HEAL_HOURS,
+        target_anchor_zone_hours=TARGET_ANCHOR_ZONE_HOURS,
         # Deviation rule (sf2-safe >= 18.1.0): catches dropouts that stay
         # below the dynamics thresholds (2026-06-07 frontier: 5.6 GW steps
         # at Actual - Forecast = -11.6 GW). Calibration: e9.
