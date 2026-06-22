@@ -113,6 +113,14 @@ TARGET_CORRUPTION_POLICY = "truncate"    # reverted 2026-06-19 after backtest: "
 TARGET_MAX_HEAL_HOURS = 5                # unused while policy="truncate"; kept for the next attempt
 TARGET_ANCHOR_ZONE_HOURS = 8             # unused while policy="truncate"; too small -- raise this
                                          # substantially (and re-backtest) before re-enabling "heal"
+CDD_BASE_TEMP_C = 22.0    # cooling-degree threshold (deg C): added 2026-06-22 after
+HDD_BASE_TEMP_C = 15.0    #   recent forecasts ran systematically high during a heat
+                          #   spell (bias +1-6 GW, 06-15..06-21); config.include_weather_
+                          #   windows only contributes linear 1D/7D mean/max/min of raw
+                          #   temperature_2m, which cannot represent the load-temperature
+                          #   relationship's threshold/kink behaviour (heating demand below
+                          #   ~15C, cooling above ~22C gets averaged away). See
+                          #   add_degree_day_features().
 LAG_FALLBACK = [1, 2, 24, 168]
 TRAIN_YEARS = 2
 PREDICT_SIZE = 24
@@ -536,6 +544,44 @@ def select_key_lags(interim: pd.DataFrame, last_full_hour: pd.Timestamp,
 
 
 # --- config + pipeline --------------------------------------------------------
+def add_degree_day_features(mt) -> None:
+    """Add hourly cooling-/heating-degree exog columns from the raw aligned temperature.
+
+    ``ConfigEntsoe`` has no degree-day toggle -- ``include_weather_windows``
+    only contributes rolling 1D/7D mean/max/min of ``temperature_2m`` (see
+    ``spotforecast2_safe.weather.features.get_weather_features``), which
+    averages away the threshold behaviour of heating/cooling demand. Inserted
+    post-hoc after ``build_exogenous_features()``: mutates the same
+    ``data_with_exog`` / ``exo_pred`` / ``exog_feature_names`` attributes that
+    ``_get_target_data`` reads at fit/predict time (sf2-safe
+    ``manager.features.get_target_data``), so no library changes are needed.
+    """
+    temp = mt.weather_aligned.get("temperature_2m") if mt.weather_aligned is not None else None
+    if temp is None:
+        logger.warning("temperature_2m not in weather_aligned (weather fetch "
+                       "skipped/failed) -- degree-day features not added.")
+        return
+
+    cdd = (temp - CDD_BASE_TEMP_C).clip(lower=0).rename("weather_cdd")
+    hdd = (HDD_BASE_TEMP_C - temp).clip(lower=0).rename("weather_hdd")
+    for name, series in (("weather_cdd", cdd), ("weather_hdd", hdd)):
+        train_vals = series.reindex(mt.data_with_exog.index)
+        pred_vals = series.reindex(mt.exo_pred.index)
+        if train_vals.isna().any() or pred_vals.isna().any():
+            logger.warning("%s has gaps after reindexing to the pipeline index "
+                           "(train=%d, pred=%d NaN); filling via ffill/bfill.",
+                           name, int(train_vals.isna().sum()), int(pred_vals.isna().sum()))
+            train_vals = train_vals.ffill().bfill()
+            pred_vals = pred_vals.ffill().bfill()
+        mt.data_with_exog[name] = train_vals.astype("float32")
+        mt.exo_pred[name] = pred_vals.astype("float32")
+        if name not in mt.exog_feature_names:
+            mt.exog_feature_names.append(name)
+    logger.info("added degree-day features: weather_cdd (base %.0fC), weather_hdd "
+                "(base %.0fC) -- %d exog features total",
+                CDD_BASE_TEMP_C, HDD_BASE_TEMP_C, len(mt.exog_feature_names))
+
+
 def team4_lgbm_factory(config, *, weight_func=None, target=None):
     """qmd ``team4-factory``: LightGBM with anchored level windows (>= 72 h).
 
@@ -797,6 +843,7 @@ def run_pipeline(cfg, search_space):
     logger.info("imputation OK (0 NaN remaining)")
 
     mt.build_exogenous_features()
+    add_degree_day_features(mt)
 
     logger.info("starting SpotOptim search (n_trials=%s, n_jobs=%s) -- the slow "
                 "step (~5-10 min on a laptop) ...", cfg.n_trials_spotoptim,
