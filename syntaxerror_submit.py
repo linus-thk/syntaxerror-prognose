@@ -121,7 +121,7 @@ HDD_BASE_TEMP_C = 15.0    #   recent forecasts ran systematically high during a 
                           #   relationship's threshold/kink behaviour (heating demand below
                           #   ~15C, cooling above ~22C gets averaged away). See
                           #   add_degree_day_features().
-LAG_FALLBACK = [1, 2, 24, 168]
+LAG_FALLBACK = [1, 2, 24]
 TRAIN_YEARS = 2
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
