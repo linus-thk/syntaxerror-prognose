@@ -39,7 +39,7 @@ Historischer Replay (`--as-of`, `--skip-download`) fuer drei Tage
 ## Ergebnis: MAE/RMSE (MW) im Backtest gegen die tatsaechliche Last
 
 | Tag | MAE LightGBM-only | MAE Ensemble (0.5/0.5) | MAE ENTSO-E-Baseline | RMSE LightGBM-only | RMSE Ensemble | RMSE ENTSO-E |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|                               ---|
 | 2026-06-18 | 1736 | **1482** | 2366 | 1951 | 1775 | 2654 |
 | 2026-06-19 | 1403 | **1097** | 3301 | 1550 | 1253 | 3402 |
 | 2026-06-20 | 1737 | **1497** | 1589 | 2046 | 1630 | 2007 |
