@@ -21,3 +21,7 @@
 2026-06-24 22:19:19  INFO      spotforecast2_safe.multitask.base.MultiTask  Merged data shape: (39255, 28)
 2026-06-24 22:19:19  INFO      spotforecast2_safe.multitask.base.MultiTask  Exogenous prediction covariates shape: (34, 126)
 2026-06-24 22:19:19  INFO      spotforecast2_safe.multitask.base.MultiTask  [task 4] Target 'Actual Load': task 4: SpotOptim Tuned ...
+2026-06-24 22:31:13  INFO      spotforecast2_safe.multitask.base.MultiTask    Best params: {'estimator__lgbm__num_leaves': 1014, 'estimator__lgbm__max_depth': 13, 'estimator__lgbm__learning_rate': 0.004059803558029344, 'estimator__lgbm__n_estimators': 1410, 'estimator__lgbm__bagging_fraction': 0.8326691264951528, 'estimator__lgbm__feature_fraction': 0.7355233219611782, 'estimator__lgbm__reg_alpha': 9.725848401593371, 'estimator__lgbm__reg_lambda': 0.1651888085680504}
+2026-06-24 22:31:13  INFO      spotforecast2_safe.multitask.base.MultiTask    Best lags: [  1   2  23  24  47  48 167 168]
+2026-06-24 22:31:13  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved tuning results: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/tuning_results/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260624_203113.json
+2026-06-24 22:32:03  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved model: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/models/bart26k-live-syntaxerror-ensemble-test/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260624_203201.joblib
