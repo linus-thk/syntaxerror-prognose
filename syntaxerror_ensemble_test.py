@@ -133,7 +133,7 @@ NUMBER_FOLDS = 10
 N_TRIALS_SPOTOPTIM = 10
 N_INITIAL_SPOTOPTIM = 5
 LAGS_CONSIDER = [1, 2, 24]                # fixed, no PACF lag selection (stock-style, see spotoptim variant)
-DEFAULT_LGBM_WEIGHT = 0.5                  # 0.5 = equal weight = today's team4_ensemble_factory behaviour
+DEFAULT_LGBM_WEIGHT = 0.8                  # 0.5 = equal weight = today's team4_ensemble_factory behaviour
 
 logger = logging.getLogger("syntaxerror_ensemble_test")
 
