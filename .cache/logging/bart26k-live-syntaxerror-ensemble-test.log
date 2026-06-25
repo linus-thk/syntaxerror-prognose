@@ -50,3 +50,28 @@
 2026-06-25 13:16:25  INFO      spotforecast2_safe.multitask.base.MultiTask    Best lags: [  1   2  24  48 168]
 2026-06-25 13:16:25  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved tuning results: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/tuning_results/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260625_111625.json
 2026-06-25 13:16:34  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved model: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/models/bart26k-live-syntaxerror-ensemble-test/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260625_111634.joblib
+2026-06-25 19:28:33  WARNING   spotforecast2_safe.multitask.base.MultiTask  prepare_data: dropping 29 trailing rows without any observed target (2026-06-25 16:00:00+00:00 -> 2026-06-26 21:00:00+00:00); window geometry (data_end/cov_end/exo_pred) is anchored on the last observed target instead.
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Pipeline data shape after preparation: (39281, 2)
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Forecasted Load: 386 outliers automatically detected
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Actual Load: 387 outliers automatically detected
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Outlier detection complete.
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  apply_imputation: NaN cells before imputation: 0 (method='weighted', shape=(39281, 2))
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Applying weighted imputation (n2n style)...
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Weight function created with 39281 entries.
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  apply_imputation: NaN cells after imputation: 0
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Imputation complete (method=weighted).
+2026-06-25 19:28:33  INFO      spotforecast2_safe.multitask.base.MultiTask  Building exogenous features...
+2026-06-25 19:28:40  INFO      spotforecast2_safe.multitask.base.MultiTask    Weather features: (39313, 105)
+2026-06-25 19:28:40  INFO      spotforecast2_safe.multitask.base.MultiTask    Calendar features: (39313, 4)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask    Day/night features: (39313, 4)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask    Holiday features: (39313, 1)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  Combined exogenous features shape: (39313, 126)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  Selected 27 exogenous features for training.
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  Training window: 2023-06-26 15:00:00+00:00 to 2026-06-25 15:00:00+00:00
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  Merged data shape: (39281, 28)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  Exogenous prediction covariates shape: (33, 126)
+2026-06-25 19:28:41  INFO      spotforecast2_safe.multitask.base.MultiTask  [task 4] Target 'Actual Load': task 4: SpotOptim Tuned ...
+2026-06-25 19:41:28  INFO      spotforecast2_safe.multitask.base.MultiTask    Best params: {'estimator__lgbm__num_leaves': 540, 'estimator__lgbm__max_depth': 23, 'estimator__lgbm__learning_rate': 0.009209895879202111, 'estimator__lgbm__n_estimators': 2796, 'estimator__lgbm__bagging_fraction': 0.5072103824016384, 'estimator__lgbm__feature_fraction': 0.7549560617143906, 'estimator__lgbm__reg_alpha': 1.8398200882813274, 'estimator__lgbm__reg_lambda': 2.142837236327148}
+2026-06-25 19:41:28  INFO      spotforecast2_safe.multitask.base.MultiTask    Best lags: [  1   2  24  48 167 168]
+2026-06-25 19:41:28  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved tuning results: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/tuning_results/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260625_174128.json
+2026-06-25 19:42:56  INFO      spotforecast2_safe.multitask.base.MultiTask    Saved model: /Users/linuswolff/Documents/GitHub/syntaxerror-prognose/.cache/models/bart26k-live-syntaxerror-ensemble-test/bart26k-live-syntaxerror-ensemble-test_Actual Load_spotoptim_20260625_174253.joblib

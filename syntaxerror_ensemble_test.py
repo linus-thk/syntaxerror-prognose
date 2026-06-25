@@ -123,7 +123,7 @@ import syntaxerror_submit as se  # reuse the proven operational pipeline + ensem
 
 # --- weighted LGBM+XGBoost ensemble variant constants --------------------------
 COUNTRY = se.COUNTRY
-DEFAULT_TEAM_ID = "syntaxerror_ensemble_test"  # deliberately non-colliding, see module docstring
+DEFAULT_TEAM_ID = "syntaxerror"
 TRAIN_YEARS = 3
 PREDICT_SIZE = 24
 REFIT_SIZE = 7
