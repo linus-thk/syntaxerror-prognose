@@ -128,15 +128,47 @@ if [ -z "$GITHUB_USER" ]; then
     exit 1
 fi
 
-if gh pr create \
+PR_OUTPUT=$(gh pr create \
     --repo bartzbeielstein/challenge-leaderboard \
     --title "$SUMMARY" \
     --body "Automatisch generierte Submission für $FORECAST_DATE" \
     --base main \
-    --head "$GITHUB_USER:$BRANCH_NAME" 2>&1 | grep -q "already exists"; then
+    --head "$GITHUB_USER:$BRANCH_NAME" 2>&1 || true)
+
+if echo "$PR_OUTPUT" | grep -q "already exists"; then
     print_info "PR existiert bereits"
 else
     print_success "PR erstellt"
+fi
+
+# Merge-Konflikte automatisch auflösen (unsere CSV-Werte gewinnen immer)
+print_info "Prüfe auf Merge-Konflikte im PR..."
+sleep 5  # GitHub braucht kurz, um mergeability zu berechnen
+
+MERGEABLE=""
+for i in 1 2 3; do
+    MERGEABLE=$(gh pr view \
+        --repo bartzbeielstein/challenge-leaderboard \
+        --json mergeable \
+        -q .mergeable \
+        "$GITHUB_USER:$BRANCH_NAME" 2>/dev/null || echo "UNKNOWN")
+    if [ "$MERGEABLE" != "UNKNOWN" ] && [ -n "$MERGEABLE" ]; then
+        break
+    fi
+    print_info "Warte auf GitHub-Konfliktprüfung (Versuch $i/3)..."
+    sleep 5
+done
+
+if [ "$MERGEABLE" = "CONFLICTING" ]; then
+    print_info "Merge-Konflikt erkannt – löse automatisch auf (unsere Werte gewinnen)..."
+    git fetch upstream main
+    git merge -X ours upstream/main --no-edit
+    git push -f origin "$BRANCH_NAME"
+    print_success "Konflikte automatisch aufgelöst und Branch aktualisiert"
+elif [ "$MERGEABLE" = "MERGEABLE" ]; then
+    print_success "Kein Merge-Konflikt – PR ist sauber"
+else
+    print_info "Konflikt-Status: $MERGEABLE (konnte nicht eindeutig geprüft werden)"
 fi
 
 print_success "🚀 Fertig!"
