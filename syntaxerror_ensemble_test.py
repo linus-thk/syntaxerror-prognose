@@ -338,6 +338,17 @@ def run_pipeline(cfg):
         raise se.Abort(1, f"imputation left {nan_after} NaN in Actual Load (must be 0)")
     logger.info("imputation OK (0 NaN remaining)")
 
+    # Open-Meteo archive returns null for wind_speed_10m / wind_direction_10m in
+    # parts of 2022-2023. A recent spotforecast2_safe update started raising
+    # ValueError for these gaps instead of silently filling them, and the error
+    # type doesn't match the WeatherFetchError caught by on_weather_failure="skip".
+    # Restore the old fill-on-gap behaviour so the pipeline isn't blocked.
+    from spotforecast2_safe.weather import client as _wc
+    _orig_finalize = _wc.WeatherService._finalize_df
+    def _patched_finalize(self, df, freq, *_):
+        return _orig_finalize(self, df, freq, fill_missing=True)
+    _wc.WeatherService._finalize_df = _patched_finalize
+
     mt.build_exogenous_features()
 
     search_space = se.build_ensemble_search_space(LAGS_CONSIDER)
