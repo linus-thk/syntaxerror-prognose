@@ -1,0 +1,24 @@
+{
+  "data_frame_name": "bart26k-live-syntaxerror-ensemble-test",
+  "target": "Actual Load",
+  "task_name": "spotoptim",
+  "timestamp": "20260707_200247",
+  "best_params": {
+    "estimator__lgbm__num_leaves": 540,
+    "estimator__lgbm__max_depth": 23,
+    "estimator__lgbm__learning_rate": 0.009212291587780424,
+    "estimator__lgbm__n_estimators": 2796,
+    "estimator__lgbm__bagging_fraction": 0.5073216364052926,
+    "estimator__lgbm__feature_fraction": 0.7549705559905301,
+    "estimator__lgbm__reg_alpha": 1.839757395996475,
+    "estimator__lgbm__reg_lambda": 2.142821343960806
+  },
+  "best_lags": [
+    1,
+    2,
+    24,
+    48,
+    167,
+    168
+  ]
+}
