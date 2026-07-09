@@ -29,7 +29,7 @@ within an acceptable tolerance. Fill in what you measured:
 
 Notes on environment / deviations (optional):
 
-> `[e.g. OS, Python version, any data substitutions, rounding differences]`
+> ` `
 
 ## Reviewing team (Team B)
 
@@ -42,14 +42,3 @@ Notes on environment / deviations (optional):
 Signature: Markus Schmidt
 
 ---
-
-### How to submit this certificate
-
-1. Fill in **every** `[...]` placeholder above.
-2. **Compile this Markdown file to a PDF** (e.g. via your editor, `pandoc`, or a
-   Markdown-to-PDF tool).
-3. **Email the PDF** to the challenge organizer, **Prof. Dr. Bartz-Beielstein**.
-
-The organizer verifies the certificate and then sets `certified: "Yes"` for
-Team A in `teams.yml`; the leaderboard's *About the Models* table then shows a
-✅ in the **Certified** column for that team.
